@@ -1,0 +1,45 @@
+# Renders a take in the cloud and delivers the WAV as a downloadable workflow artifact.
+# Run it from the Actions tab → "Cloud render" → Run workflow.
+name: Cloud render
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: Length in minutes (max 60)
+        default: '10'
+      template:
+        description: Template name (ignored when a session file is given)
+        default: Ambient House — Chill Out Room
+      session:
+        description: Optional path to a saved session .json committed to the repo
+        default: ''
+      bits:
+        description: Bit depth (16 or 24)
+        default: '16'
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Render
+        env:
+          MINUTES: ${{ inputs.minutes }}
+          TEMPLATE: ${{ inputs.template }}
+          SESSION: ${{ inputs.session }}
+          BITS: ${{ inputs.bits }}
+        run: |
+          if [ -n "$SESSION" ]; then
+            node tools/render.mjs --minutes "$MINUTES" --bits "$BITS" --session "$SESSION" --out web-house.wav
+          else
+            node tools/render.mjs --minutes "$MINUTES" --bits "$BITS" --template "$TEMPLATE" --out web-house.wav
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-house-take
+          path: web-house.wav
