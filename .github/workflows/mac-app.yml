@@ -1,0 +1,24 @@
+# Builds the stand-alone macOS app on a real Mac runner (ad-hoc signed) and attaches it as an artifact.
+# Run from the Actions tab → "Build macOS app". Note: macOS runners use Actions minutes at 10× on private repos.
+name: Build macOS app
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build:mac
+      - name: Zip
+        run: |
+          cd dist
+          ditto -c -k --keepParent "Web House-darwin-arm64/Web House.app" WebHouse-mac-arm64.zip
+          ditto -c -k --keepParent "Web House-darwin-x64/Web House.app" WebHouse-mac-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-house-mac
+          path: dist/*.zip

@@ -32,6 +32,39 @@ Use a current Chrome, Edge, Safari or Firefox.
 
 Space bar starts and stops playback. Hover a control for a hint.
 
+## Stand-alone macOS app
+
+The same studio runs as a desktop app (Electron) that needs no browser, server or internet connection.
+It keeps the Mac from sleeping while a take is being made and streams live recordings straight to disk
+(default `~/Music/Web House`, changeable in the Record bar), so a long take survives even if something
+goes wrong near the end.
+
+Build it (Node 18+; produces Apple Silicon and Intel apps in `dist/`):
+
+```bash
+npm install
+npm run build:mac
+```
+
+The app is not signed with an Apple Developer ID. The first time, right-click it and choose **Open**. If macOS
+says it is damaged, clear the download flag and sign it locally:
+
+```bash
+xattr -cr "/Applications/Web House.app"
+codesign --force --deep --sign - "/Applications/Web House.app"
+```
+
+Fully unattended takes from Terminal — the app starts, records, saves the WAV and quits:
+
+```bash
+open -a "Web House" --args --record 120 --quit                       # 2 hours of the last session
+open -a "Web House" --args --record 60 --session ~/Desktop/my-session.json --out ~/Desktop --quit
+open -a "Web House" --args --record 20 --fast --bits 24 --template "Dub Chords — Basement" --quit
+```
+
+`--record <minutes>` records in real time; add `--fast` to render offline instead. Without options the app
+opens normally. Closing the lid still puts a Mac to sleep, so leave it open (or use an external display).
+
 ## Rendering in the cloud
 
 The same engine can render without a screen, using headless Chromium:

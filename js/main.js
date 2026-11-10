@@ -9,6 +9,8 @@ import { renderTrack } from './tracks.js';
 import { renderFx, renderLfos, assignLfo } from './side.js';
 
 const SAVE_KEY = 'webhouse.project.v1';
+const desktop = window.desktop || null; // present when running inside the desktop app
+let outDir = '';
 const $ = (id) => document.getElementById(id);
 
 const app = {
@@ -155,7 +157,9 @@ function renderTop() {
       h('b', null, 'Record'),
       field('Length (min)', h('input', { type: 'number', min: 0.25, max: 180, step: 0.25, value: R.minutes, onchange: (e) => { R.minutes = Math.min(180, Math.max(0.1, +e.target.value || 10)); e.target.value = R.minutes; app.changed(); } })),
       field('Format', h('select', { onchange: (e) => { R.bits = +e.target.value; app.changed(); } }, [16, 24].map((b) => h('option', { value: b, selected: R.bits === b }, `WAV ${b}-bit`)))),
-      h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: R.auto, onchange: (e) => { R.auto = e.target.checked; app.changed(); } }), 'Download automatically when finished'),
+      desktop
+        ? h('span', { class: 'check' }, 'Saves to ', h('code', { id: 'outDir' }, outDir), btn('Change…', async () => { outDir = await desktop.chooseFolder(); $('outDir').textContent = outDir; }))
+        : h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: R.auto, onchange: (e) => { R.auto = e.target.checked; app.changed(); } }), 'Download automatically when finished'),
       h('button', { id: 'recLive', class: 'btn rec', onclick: recordLive, title: 'Restart the song and record it in real time for the chosen length. You can keep tweaking while it records; the tab may be in the background.' }, '● Record live'),
       h('button', { id: 'recFast', class: 'btn', onclick: recordFast, title: 'Render the chosen length as fast as your computer can, without listening' }, '⚡ Fast render'),
       h('button', { id: 'recStop', class: 'btn', hidden: true, onclick: () => app.rec && app.rec.stop() }, 'Finish now'),
@@ -172,18 +176,30 @@ function recUI(active, live) {
   $('recStop').hidden = !(active && live); $('recBar').hidden = !active;
   if (!active) $('recBar').value = 0;
 }
-function deliver(blob, kind) {
-  const P = app.project, stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  const name = `web-house-${P.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${stamp}.wav`;
-  const take = { name, url: URL.createObjectURL(blob), mb: (blob.size / 1048576).toFixed(1), kind };
+function takeName() {
+  const P = app.project, stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  return `web-house-${P.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${stamp}.wav`;
+}
+function addTake(take) {
   app.takes.unshift(take); renderTakes();
-  if (P.rec.auto) h('a', { href: take.url, download: name }).click();
-  $('recMsg').textContent = `Done — ${name} (${take.mb} MB)`;
+  $('recMsg').textContent = `Done — ${take.file || take.name} (${take.mb} MB)`;
   document.title = '✓ Recording ready — Web House';
-  return take;
+}
+async function deliver(blob, kind) {
+  const name = takeName(), mb = (blob.size / 1048576).toFixed(1);
+  if (desktop) { // write to disk in slices
+    const { id } = await desktop.begin(name);
+    for (let o = 0; o < blob.size; o += 8 << 20) desktop.chunk(id, await blob.slice(o, o + (8 << 20)).arrayBuffer());
+    return addTake({ name, file: await desktop.end(id, null), mb, kind });
+  }
+  const take = { name, url: URL.createObjectURL(blob), mb, kind };
+  if (app.project.rec.auto) h('a', { href: take.url, download: name }).click();
+  addTake(take);
 }
 function renderTakes() {
-  $('takes').replaceChildren(...app.takes.map((t) => h('a', { class: 'take', href: t.url, download: t.name, title: 'Download WAV' }, `⬇ ${t.name} · ${t.mb} MB`)));
+  $('takes').replaceChildren(...app.takes.map((t) => (t.file
+    ? h('button', { class: 'take', title: 'Show in Finder', onclick: () => desktop.reveal(t.file) }, `📁 ${t.name} · ${t.mb} MB`)
+    : h('a', { class: 'take', href: t.url, download: t.name, title: 'Download WAV' }, `⬇ ${t.name} · ${t.mb} MB`))));
 }
 async function recordLive() {
   if (app.busy) return;
@@ -192,15 +208,19 @@ async function recordLive() {
   app.engine.stop();
   const eng = app.engine, rec = await LiveRecorder.create(app.ctx, eng.out);
   app.rec = rec; recUI(true, true);
-  let lock = null;
-  try { lock = await navigator.wakeLock.request('screen'); } catch { /* optional */ }
+  let lock = null, out = null, bytes = 0;
+  if (desktop) { await desktop.power(true); out = await desktop.begin(takeName()); }
+  else { try { lock = await navigator.wakeLock.request('screen'); } catch { /* optional */ } }
   eng.start(); setPlayUI();
-  const blob = await rec.start(secs, R.bits, (f) => { $('recBar').value = f; $('recMsg').textContent = `Recording ${clock(f * secs)} / ${clock(secs)} — keep this tab open`; });
+  const note = desktop ? 'saving to disk as it goes' : 'keep this tab open';
+  const result = await rec.start(secs, R.bits, (f) => { $('recBar').value = f; $('recMsg').textContent = `Recording ${clock(f * secs)} / ${clock(secs)} — ${note}`; },
+    out && ((buf) => { bytes += buf.byteLength; desktop.chunk(out.id, buf); }));
   eng.stop(); setPlayUI();
   try { rec.src.disconnect(rec.node); } catch { /* engine was replaced */ }
   if (lock) lock.release();
   app.rec = null; recUI(false);
-  deliver(blob, 'live');
+  if (out) { addTake({ name: out.file.split('/').pop(), file: await desktop.end(out.id, result), mb: (bytes / 1048576).toFixed(1), kind: 'live' }); await desktop.power(false); }
+  else await deliver(result, 'live');
 }
 async function recordFast() {
   if (app.busy) return;
@@ -210,11 +230,13 @@ async function recordFast() {
   recUI(true, false);
   const t0 = performance.now();
   try {
+    if (desktop) await desktop.power(true);
     const blob = await renderOffline(app.project, app.store, R.minutes * 60, R.bits, (f) => { $('recBar').value = f; $('recMsg').textContent = `Rendering… ${Math.round(f * 100)}%`; });
     recUI(false);
-    deliver(blob, 'fast');
+    await deliver(blob, 'fast');
+    if (desktop) await desktop.power(false);
     $('recMsg').textContent += ` in ${((performance.now() - t0) / 1000).toFixed(0)} s`;
-  } catch (e) { recUI(false); $('recMsg').textContent = 'Render failed: ' + e.message; }
+  } catch (e) { recUI(false); if (desktop) desktop.power(false); $('recMsg').textContent = 'Render failed: ' + e.message; }
 }
 
 // ---------------- persistence ----------------
@@ -311,4 +333,21 @@ window.webhouse = {
   },
 };
 
+// Desktop app: show the output folder and honour command-line options (--record, --session, --quit …).
+async function desktopBoot() {
+  const cfg = await desktop.config();
+  outDir = cfg.outDir;
+  if (cfg.error) alert(cfg.error);
+  if (cfg.session) await importProject(cfg.session);
+  else if (cfg.template && TEMPLATES[cfg.template]) app.setProject(newProject(cfg.template));
+  if (cfg.record) app.project.rec.minutes = Math.min(180, Math.max(0.1, cfg.record));
+  if (cfg.bits === 16 || cfg.bits === 24) app.project.rec.bits = cfg.bits;
+  renderTop(); setPlayUI();
+  if (cfg.record && !cfg.error) {
+    await (cfg.fast ? recordFast() : recordLive());
+    if (cfg.quit) desktop.quit();
+  }
+}
+
 boot();
+if (desktop) desktopBoot();

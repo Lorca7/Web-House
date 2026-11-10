@@ -65,21 +65,26 @@ export class LiveRecorder {
     rec.src = node;
     return rec;
   }
-  start(seconds, bits, onProgress) {
+  // Without `sink` resolves with a WAV Blob. With `sink(arrayBuffer)` the audio is streamed out as it is
+  // captured (a provisional header first) and the promise resolves with the final 44-byte header.
+  start(seconds, bits, onProgress, sink) {
     const sr = this.ctx.sampleRate;
     Object.assign(this, { total: Math.round(seconds * sr), got: 0, bits, parts: [], pending: [], active: true });
+    if (sink) sink(wavHeader(this.total, sr, bits));
     return new Promise((resolve) => {
       this.finish = () => {
         if (!this.active) return;
         this.active = false;
         this.node.port.postMessage({ on: false });
+        if (sink) return resolve(wavHeader(this.got, sr, bits));
         if (this.pending.length) this.parts.push(new Blob(this.pending));
         resolve(new Blob([wavHeader(this.got, sr, bits), ...this.parts], { type: 'audio/wav' }));
       };
       this.node.port.onmessage = (e) => {
         if (!this.active) return;
         const n = Math.min(e.data.l.length, this.total - this.got);
-        this.pending.push(pcm(e.data.l, e.data.r, n, bits, this.got, this.total, sr));
+        const block = pcm(e.data.l, e.data.r, n, bits, this.got, this.total, sr);
+        if (sink) sink(block); else this.pending.push(block);
         this.got += n;
         // fold finished chunks into Blobs so long takes do not sit in JS memory
         if (this.pending.length >= 128) { this.parts.push(new Blob(this.pending)); this.pending = []; }

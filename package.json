@@ -6,9 +6,15 @@
   "description": "Generative ambient / deep house studio for the browser",
   "scripts": {
     "start": "node tools/serve.mjs",
-    "render": "node tools/render.mjs"
+    "render": "node tools/render.mjs",
+    "app": "electron .",
+    "build:mac": "node tools/build-mac.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.48.0"
-  }
+    "playwright": "^1.48.0",
+    "electron": "^33.4.11",
+    "@electron/packager": "^18.3.6"
+  },
+  "main": "desktop/main.cjs",
+  "productName": "Web House"
 }
