@@ -73,7 +73,7 @@ body.lfo-drag .knob { outline: 1px dashed color-mix(in srgb, var(--accent2) 55%,
 
 /* ---------- layout ---------- */
 main { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 14px; padding: 14px 16px 60px; align-items: start; }
-#side { position: sticky; top: 118px; max-height: calc(100vh - 128px); overflow: auto; display: flex; flex-direction: column; gap: 14px; }
+#side { position: sticky; top: calc(var(--top, 150px) + 12px); max-height: calc(100vh - var(--top, 150px) - 24px); overflow: auto; display: flex; flex-direction: column; gap: 14px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 @media (max-width: 1050px) { main { grid-template-columns: minmax(0, 1fr); } #side { position: static; max-height: none; } #top { position: static; } }
 
@@ -154,3 +154,35 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 14px; pa
 .target input { width: 100%; }
 code { font: 11.5px ui-monospace, Menlo, monospace; color: var(--text); background: var(--bg); padding: 2px 6px; border-radius: 4px; }
 button.take { font: inherit; background: none; cursor: pointer; }
+
+/* ---------- revamp: tabs, song bar, mixer ---------- */
+.tabs { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.tabs .btn { border: 0; border-radius: 0; min-width: 76px; background: var(--bg); color: var(--dim); font-weight: 600; }
+.tabs .btn.on { background: var(--accent2); color: #06201c; }
+.bar.song { border-top: 1px solid var(--line); padding-block: 6px; gap: 8px 14px; }
+.bar.song .group { background: var(--panel2); border-radius: 10px; padding: 5px 10px; align-items: center; }
+.bar.song .group > b { margin-right: 4px; }
+.row.tools { align-items: center; margin: 0; }
+.row.tools h2 { margin: 0 auto 0 2px; }
+
+.mixer { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; align-items: stretch; }
+.ch { flex: 0 0 118px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 8px; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--tc); border-radius: 10px; }
+.ch.master { margin-left: auto; flex-basis: 122px; background: var(--panel2); position: sticky; right: 0; box-shadow: -10px 0 14px -8px #000; }
+.ch-num { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--tc); align-self: flex-start; }
+.ch .name { width: 100%; font-weight: 600; text-align: center; background: none; border-color: transparent; padding-inline: 2px; }
+.ch input.name:hover, .ch input.name:focus { border-color: var(--line); }
+.ch-knobs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 2px; }
+.ch-btns { display: flex; gap: 4px; min-height: 26px; }
+.ch-fader { display: flex; gap: 8px; align-items: stretch; height: 180px; }
+.ch output { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--dim); }
+.vu { width: 10px; height: 180px; background: var(--bg); border-radius: 3px; color: var(--accent2); caret-color: var(--danger); outline-color: var(--text); }
+.fader { position: relative; width: 34px; height: 100%; cursor: ns-resize; touch-action: none; user-select: none; border-radius: 6px; --n: 0; --m: 0; }
+.fader i { position: absolute; left: 50%; display: block; pointer-events: none; }
+.f-slot { top: 6px; bottom: 6px; width: 4px; margin-left: -2px; background: var(--bg); border: 1px solid var(--line); border-radius: 2px; }
+.f-fill { bottom: 6px; width: 4px; margin-left: -2px; height: calc(var(--n) * (100% - 22px) + 5px); background: var(--tc, var(--accent)); border-radius: 2px; opacity: .8; }
+.f-thumb { bottom: calc(var(--n) * (100% - 22px)); width: 30px; height: 22px; margin-left: -15px; background: linear-gradient(#5a4f47, #3a322c); border: 1px solid #6b5f55; border-radius: 4px; box-shadow: 0 2px 5px #0008; }
+.f-thumb::after { content: ""; position: absolute; left: 4px; right: 4px; top: 9px; height: 2px; background: var(--text); border-radius: 1px; }
+.f-mod { bottom: calc(var(--m) * (100% - 22px) + 9px); width: 34px; margin-left: -17px; height: 2px; background: #fff; opacity: 0; }
+.fader.mapped .f-thumb::after { background: var(--accent2); }
+.fader.drop, body.lfo-drag .fader:hover { background: color-mix(in srgb, var(--accent2) 30%, transparent); }
+body.lfo-drag .fader { outline: 1px dashed color-mix(in srgb, var(--accent2) 55%, transparent); cursor: copy; }

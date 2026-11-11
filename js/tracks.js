@@ -1,9 +1,9 @@
 // Track strips: header + type-specific editor (drum grid, synth + sequencer, granular, audio clips).
 import { h, clamp } from './core.js';
-import { LANES, DRUM_PATTERNS, ENGINES, SYNTH_PRESETS, evolveDrums, mutateSeq } from './defs.js';
+import { LANES, DRUM_PATTERNS, ENGINES, evolveDrums, mutateSeq } from './defs.js';
 import { setPattern, applySynthPreset, regenerate } from './project.js';
 import { getTexture } from './sounds.js';
-import { knob, sel, btn, field, drawWave, dropZone } from './ui.js';
+import { knob, sel, btn, field, drawWave, dropZone, presetSelect } from './ui.js';
 
 const TYPE = { drum: 'Drum machine', synth: 'Synth', gran: 'Granular', audio: 'Audio track' };
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -17,8 +17,9 @@ export function renderTrack(app, tr) {
   const P = app.project, p = 't' + tr.id, ui = { refresh() {}, playhead() {}, tick() {} };
   const rest = h('span', { class: 'badge rest', title: 'Arrangement drift has faded this track out for now' }, 'resting');
   const body = h('div', { class: 'body' });
-  const mute = btn('M', () => { tr.mute = !tr.mute; mute.classList.toggle('on', tr.mute); app.mixChanged(); }, { class: 'sq' + (tr.mute ? ' on' : ''), title: 'Mute' });
-  const solo = btn('S', () => { tr.solo = !tr.solo; solo.classList.toggle('on', tr.solo); app.mixChanged(); }, { class: 'sq solo' + (tr.solo ? ' on' : ''), title: 'Solo' });
+  const mute = btn('M', () => { tr.mute = !tr.mute; app.mixChanged(); }, { class: 'sq' + (tr.mute ? ' on' : ''), title: 'Mute' });
+  const solo = btn('S', () => { tr.solo = !tr.solo; app.mixChanged(); }, { class: 'sq solo' + (tr.solo ? ' on' : ''), title: 'Solo' });
+  app.msSync.push(() => { mute.classList.toggle('on', tr.mute); solo.classList.toggle('on', tr.solo); });
   const fold = btn(tr.open ? '▾' : '▸', () => { tr.open = !tr.open; fold.textContent = tr.open ? '▾' : '▸'; body.hidden = !tr.open; if (tr.open) ui.refresh(); app.changed(); }, { class: 'sq ghost', title: 'Show / hide editor' });
   const head = h('div', { class: 'head' },
     fold,
@@ -26,6 +27,7 @@ export function renderTrack(app, tr) {
     h('span', { class: 'badge' }, TYPE[tr.type]), rest,
     h('div', { class: 'strip' }, mute, solo,
       ...['vol', 'pan', 'fx', 'space', 'drift'].map((k) => knob(app, `${p}.${k}`, { small: true })),
+      btn('↑', () => app.moveTrack(tr, -1), { class: 'sq ghost', title: 'Move track up' }), btn('↓', () => app.moveTrack(tr, 1), { class: 'sq ghost', title: 'Move track down' }),
       btn('⧉', () => app.dupTrack(tr), { class: 'sq ghost', title: 'Duplicate track' }),
       btn('✕', () => { if (confirm(`Delete "${tr.name}"?`)) app.removeTrack(tr); }, { class: 'sq ghost', title: 'Delete track' })));
   body.hidden = !tr.open;
@@ -126,7 +128,7 @@ function synthBody(app, tr, ui, body) {
     const regen = () => { regenerate(P, tr); ui.refresh(); app.changed(); };
     body.replaceChildren(
       h('div', { class: 'row' },
-        field('Preset', plainSelect(Object.keys(SYNTH_PRESETS), tr.preset, (v) => { applySynthPreset(P, tr, v); app.refreshParams(p); draw(); app.changed(); }, 'Sound + sequencer preset')),
+        field('Preset', presetSelect(tr.preset, (v) => { applySynthPreset(P, tr, v); app.refreshParams(p); draw(); app.changed(); })),
         sel(app, p + '.engine', { onchange: draw }),
         ...ENGINES[engine].map((d) => (d.kind === 'num' ? knob(app, `${p}.${engine}.${d.key}`) : sel(app, `${p}.${engine}.${d.key}`)))),
       h('div', { class: 'row seq' },

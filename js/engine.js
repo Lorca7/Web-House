@@ -1,7 +1,7 @@
 // Audio engine. Works with a live AudioContext or an OfflineAudioContext (fast render):
 // the caller drives it with control(t) (LFOs / modulation) and advance(until) (note scheduling).
 import { DEFS, clamp, toNorm, fromNorm, rng, hash01, mtof } from './core.js';
-import { FX, SCALES, VOICINGS, degToSemi, mutateSeq, evolveDrums } from './defs.js';
+import { FX, SCALES, VOICINGS, ENGINES, degToSemi, mutateSeq, evolveDrums } from './defs.js';
 import { makeFx } from './fx.js';
 import { getKit, getTexture, reversed, WINDOWS } from './sounds.js';
 
@@ -131,6 +131,7 @@ export class Engine {
       live: new Set(), voices: new Set(), rt: { resting: false, fill: false, next: 0, drift: 0, lastT: 0, recent: [], oh: null },
     };
     a.input.connect(a.duck).connect(a.rest).connect(a.vol).connect(a.pan);
+    a.meter = c.createAnalyser(); a.meter.fftSize = 256; a.pan.connect(a.meter);
     a.pan.connect(a.fx).connect(this.fxIn); a.pan.connect(a.byp).connect(this.byp); a.pan.connect(a.sp).connect(this.spaceIn);
     a.voiceIn = a.input;
     this.H(p + '.vol', () => this.updateMix());
@@ -139,10 +140,13 @@ export class Engine {
     this.H(p + '.space', sm(a.sp.gain));
     if (tr.type === 'synth') {
       a.tone = c.createBiquadFilter(); a.tone.connect(a.input); a.voiceIn = a.tone;
-      const tone = () => { const e = this.v(p + '.engine'); a.tone.frequency.setTargetAtTime(e === 'sub' ? 20000 : this.v(`${p}.${e}.tone`), c.currentTime, 0.03); };
-      this.H(p + '.engine', tone); this.H(p + '.fm.tone', tone); this.H(p + '.organ.tone', tone);
-      this.H(p + '.sub.cutoff', (v, t) => { for (const r of a.voices) for (const f of r.f) f.frequency.setTargetAtTime(clamp(v * r.ks, 30, 18000), t, 0.05); });
-      this.H(p + '.sub.res', (v, t) => { for (const r of a.voices) r.f[0].Q.setTargetAtTime(v, t, 0.05); });
+      const tone = () => { const id = `${p}.${this.v(p + '.engine')}.tone`; a.tone.frequency.setTargetAtTime(id in this.p.params ? this.v(id) : 20000, c.currentTime, 0.03); };
+      this.H(p + '.engine', tone);
+      for (const e in ENGINES) for (const d of ENGINES[e]) {
+        if (d.key === 'tone') this.H(`${p}.${e}.tone`, tone);
+        // parameters that should move notes that are already sounding
+        else if (['cutoff', 'res', 'vowel', 'q'].includes(d.key)) this.H(`${p}.${e}.${d.key}`, (v, t) => { for (const r of a.voices) if (r[d.key]) r[d.key](v, t); });
+      }
     }
     if (tr.type === 'gran') {
       a.hp = c.createBiquadFilter(); a.hp.type = 'highpass'; a.lp = c.createBiquadFilter();
@@ -420,6 +424,33 @@ function adsr(param, t, dur, A, D, S, R, L) {
   return t + dur + R * 1.6 + 0.05;
 }
 
+// 24 dB low-pass with a decaying envelope on `detune`, so `frequency` stays free for live cutoff changes.
+function filt(e, f, vel, t, g, envScale = 1) {
+  const c = e.ctx, f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), ks = Math.pow(f / 261.6, 0.35);
+  const env = g('envAmt') * 1200 * (0.5 + 0.5 * vel) * envScale;
+  for (const fl of [f1, f2]) { fl.frequency.value = clamp(g('cutoff') * ks, 30, 18000); fl.detune.setValueAtTime(env, t); fl.detune.setTargetAtTime(0, t, g('fdecay') / 3); }
+  f1.Q.value = g('res'); f2.Q.value = 0.5; f1.connect(f2);
+  return { in: f1, out: f2, rec: {
+    cutoff: (v, tt) => { for (const fl of [f1, f2]) fl.frequency.setTargetAtTime(clamp(v * ks, 30, 18000), tt, 0.05); },
+    res: (v, tt) => f1.Q.setTargetAtTime(v, tt, 0.05),
+  } };
+}
+const curves = {};
+function curve(name) {
+  if (!curves[name]) {
+    const n = 2048, c = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; c[i] = name === 'fold' ? Math.sin(x * Math.PI * 2.5) : Math.tanh(x * 3) / Math.tanh(3); }
+    curves[name] = c;
+  }
+  return curves[name];
+}
+// formant frequencies for oo – oh – ah – eh – ee
+const VOWELS = [[325, 700, 2700], [450, 800, 2830], [800, 1150, 2900], [400, 1600, 2700], [350, 2000, 2800]];
+function formants(v) {
+  const x = clamp(v) * 3.999, i = Math.floor(x), m = x - i;
+  return VOWELS[i].map((a, k) => a + (VOWELS[i + 1][k] - a) * m);
+}
+
 const VOICES = {
   // Two oscillators + sub into a 24 dB low-pass with its own envelope.
   sub(e, a, p, midi, t, dur, vel) {
@@ -430,18 +461,13 @@ const VOICES = {
     o1.detune.value = -g('detune'); o2.detune.value = g('detune');
     mix.gain.value = 0.5; o1.connect(mix); o2.connect(mix);
     if (g('sub') > 0.01) { const s = c.createOscillator(), sg = c.createGain(); s.frequency.value = f / 2; sg.gain.value = g('sub'); s.connect(sg).connect(mix); srcs.push(s); }
-    const f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), ks = Math.pow(f / 261.6, 0.35);
-    const cut = clamp(g('cutoff') * ks, 30, 18000), env = g('envAmt') * 1200 * (0.5 + 0.5 * vel);
-    for (const fl of [f1, f2]) { fl.frequency.value = cut; fl.detune.setValueAtTime(env, t); fl.detune.setTargetAtTime(0, t, g('fdecay') / 3); }
-    f1.Q.value = g('res'); f2.Q.value = 0.5;
-    const amp = c.createGain(), pan = c.createStereoPanner();
+    const fl = filt(e, f, vel, t, g), amp = c.createGain(), pan = c.createStereoPanner();
     const end = adsr(amp.gain, t, dur, g('attack'), g('decay'), g('sustain'), g('release'), g('level') * vel * 0.5);
     pan.pan.value = (e.rand() - 0.5) * 2 * g('spread');
-    mix.connect(f1).connect(f2).connect(amp).connect(pan).connect(a.voiceIn);
+    mix.connect(fl.in); fl.out.connect(amp).connect(pan).connect(a.voiceIn);
     for (const s of srcs) { s.start(t); s.stop(end); }
-    const rec = { f: [f1, f2], ks };
-    a.voices.add(rec);
-    e.keep(a, srcs, pan, () => a.voices.delete(rec));
+    a.voices.add(fl.rec);
+    e.keep(a, srcs, pan, () => a.voices.delete(fl.rec));
   },
   // One modulator feeding two detuned, hard-panned carriers (electric piano, bells, FM bass).
   fm(e, a, p, midi, t, dur, vel) {
@@ -478,5 +504,77 @@ const VOICES = {
     amp.connect(a.voiceIn);
     o.start(t); o.stop(end); k.start(t); k.stop(t + 0.15);
     e.keep(a, [o, k], amp);
+  },
+  // Five detuned saws spread across the stereo field.
+  saw(e, a, p, midi, t, dur, vel) {
+    const c = e.ctx, f = mtof(midi), g = (k) => e.v(p + '.saw.' + k), srcs = [];
+    const fl = filt(e, f, vel, t, g), amp = c.createGain(), det = g('detune'), side = g('mix'), w = g('spread');
+    [-1, -0.5, 0, 0.5, 1].forEach((d, i) => {
+      const o = c.createOscillator(), og = c.createGain(), pn = c.createStereoPanner();
+      o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = d * det + (e.rand() - 0.5) * 3;
+      og.gain.value = d === 0 ? 0.5 : side * 0.35; pn.pan.value = d * w;
+      o.connect(og).connect(pn).connect(fl.in); srcs.push(o);
+    });
+    const end = adsr(amp.gain, t, dur, g('attack'), g('decay'), g('sustain'), g('release'), g('level') * vel * 0.45);
+    fl.out.connect(amp).connect(a.voiceIn);
+    for (const s of srcs) { s.start(t); s.stop(end); }
+    a.voices.add(fl.rec);
+    e.keep(a, srcs, amp, () => a.voices.delete(fl.rec));
+  },
+  // 303-style mono line: accent on loud steps, slide when notes overlap, driven output.
+  acid(e, a, p, midi, t, dur, vel) {
+    const c = e.ctx, f = mtof(midi), g = (k) => e.v(p + '.acid.' + k);
+    const acc = vel > 0.85 ? g('accent') : 0, slide = g('slide'), last = a.rt.acid;
+    const o = c.createOscillator(), fl = filt(e, f, 1, t, g, 0.7 + acc * 0.6), pre = c.createGain(), sh = c.createWaveShaper(), amp = c.createGain();
+    o.type = g('wave');
+    if (slide > 0.005 && last && t < last.end + 0.03) { o.frequency.setValueAtTime(last.f, t); o.frequency.exponentialRampToValueAtTime(f, t + slide); }
+    else o.frequency.value = f;
+    a.rt.acid = { f, end: t + dur };
+    const drive = g('drive'), L = (g('level') * (0.55 + 0.25 * vel + acc * 0.3)) / (1 + drive * 1.5);
+    pre.gain.value = 0.35 + drive * 2.5; sh.curve = curve('tanh');
+    amp.gain.setValueAtTime(0, t); amp.gain.linearRampToValueAtTime(L, t + 0.003);
+    amp.gain.setTargetAtTime(L * 0.7, t + 0.003, 0.15); amp.gain.setTargetAtTime(0, t + dur, 0.012);
+    o.connect(fl.in); fl.out.connect(pre).connect(sh).connect(amp).connect(a.voiceIn);
+    o.start(t); o.stop(t + dur + 0.12);
+    a.voices.add(fl.rec);
+    e.keep(a, [o], amp, () => a.voices.delete(fl.rec));
+  },
+  // Sine (+ one partial) into a wavefolder; the fold depth has its own envelope.
+  fold(e, a, p, midi, t, dur, vel) {
+    const c = e.ctx, f = mtof(midi), g = (k) => e.v(p + '.fold.' + k);
+    const o1 = c.createOscillator(), o2 = c.createOscillator(), g2 = c.createGain(), pre = c.createGain(), sh = c.createWaveShaper(), amp = c.createGain();
+    const hm = g('hmix'), base = (0.18 + g('fold') * 0.82) / (1 + hm), peak = Math.min(1 / (1 + hm), base + (g('fenv') * 0.8 * (0.4 + 0.6 * vel)) / (1 + hm));
+    o1.frequency.value = f; o2.frequency.value = f * g('harm'); g2.gain.value = hm;
+    pre.gain.setValueAtTime(peak, t); pre.gain.setTargetAtTime(base, t, g('fdecay') / 3);
+    sh.curve = curve('fold'); sh.oversample = '2x';
+    o1.connect(pre); o2.connect(g2).connect(pre); pre.connect(sh).connect(amp).connect(a.voiceIn);
+    const end = adsr(amp.gain, t, dur, g('attack'), g('decay'), g('sustain'), g('release'), g('level') * vel * 0.4);
+    for (const s of [o1, o2]) { s.start(t); s.stop(end); }
+    e.keep(a, [o1, o2], amp);
+  },
+  // Two saws with vibrato through three parallel band-pass formants.
+  vox(e, a, p, midi, t, dur, vel) {
+    const c = e.ctx, f = mtof(midi), g = (k) => e.v(p + '.vox.' + k);
+    const src = c.createGain(), amp = c.createGain(), lfo = c.createOscillator(), lg = c.createGain(), srcs = [lfo], det = g('detune');
+    lfo.frequency.value = 5 + e.rand(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(g('vib') * 35, t + 0.4); lfo.connect(lg);
+    for (const sgn of [-1, 1]) {
+      const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = sgn * det;
+      lg.connect(o.detune); o.connect(src); srcs.push(o);
+    }
+    const bands = formants(g('vowel')).map((fr, i) => {
+      const b = c.createBiquadFilter(), bg = c.createGain();
+      b.type = 'bandpass'; b.frequency.value = fr; b.Q.value = g('q'); bg.gain.value = [1, 0.6, 0.3][i];
+      src.connect(b).connect(bg).connect(amp);
+      return b;
+    });
+    const rec = {
+      vowel: (v, tt) => formants(v).forEach((fr, i) => bands[i].frequency.setTargetAtTime(fr, tt, 0.04)),
+      q: (v, tt) => bands.forEach((b) => b.Q.setTargetAtTime(v, tt, 0.04)),
+    };
+    const end = adsr(amp.gain, t, dur, g('attack'), g('decay'), g('sustain'), g('release'), g('level') * vel * 1.5);
+    amp.connect(a.voiceIn);
+    for (const s of srcs) { s.start(t); s.stop(end); }
+    a.voices.add(rec);
+    e.keep(a, srcs, amp, () => a.voices.delete(rec));
   },
 };

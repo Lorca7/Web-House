@@ -1,10 +1,11 @@
 // Web House — application shell: state, transport, recording, persistence, top-level rendering.
 import { DEFS, h, unregister } from './core.js';
-import { NOTE_NAMES, SCALES, PROGS, SYNTH_PRESETS, degToSemi } from './defs.js';
+import { NOTE_NAMES, SCALES, PROGS, degToSemi } from './defs.js';
 import { Engine } from './engine.js';
 import { newProject, rebuildDefs, addTrack, TEMPLATES } from './project.js';
 import { LiveRecorder, renderOffline, canRenderOffline, encodeWav } from './recorder.js';
-import { knob, sel, btn, field, isFileDrag } from './ui.js';
+import { knob, sel, btn, field, isFileDrag, presetSelect } from './ui.js';
+import { renderMixer } from './mixer.js';
 import { renderTrack } from './tracks.js';
 import { renderFx, renderLfos, assignLfo } from './side.js';
 
@@ -15,7 +16,7 @@ const $ = (id) => document.getElementById(id);
 
 const app = {
   project: null, engine: null, ctx: null, store: new Map(), ctrls: new Map(), trackUI: new Map(),
-  armedLfo: null, dragLfo: null, busy: null, takes: [],
+  armedLfo: null, dragLfo: null, busy: null, takes: [], msSync: [], mixUI: [], view: 'studio',
 
   setParam(id, v) {
     this.project.params[id] = v;
@@ -32,7 +33,21 @@ const app = {
   isMapped(id) { return this.project.lfos.some((l) => l.targets.some((t) => t.id === id)) || !!(this.engine && this.engine.xy[id]); },
   assignLfo(i, id) { assignLfo(this, i, id); },
   changed() { clearTimeout(this.saveT); this.saveT = setTimeout(() => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.project)); } catch { /* storage full or blocked */ } }, 800); },
-  mixChanged() { if (this.engine) this.engine.updateMix(); this.changed(); },
+  mixChanged() { if (this.engine) this.engine.updateMix(); for (const fn of this.msSync) fn(); this.changed(); },
+  setView(v) {
+    this.view = v;
+    try { localStorage.setItem('webhouse.view', v); } catch { /* blocked */ }
+    $('tracks').hidden = v !== 'studio'; $('mixer').hidden = v !== 'mixer';
+    for (const b of document.querySelectorAll('.tabs .btn')) b.classList.toggle('on', b.dataset.view === v);
+    if (v === 'studio') for (const ui of this.trackUI.values()) ui.refresh();
+    window.scrollTo(0, 0);
+  },
+  moveTrack(tr, dir) {
+    const list = this.project.tracks, i = list.indexOf(tr), j = i + dir;
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    this.renderTracks(); this.changed();
+  },
 
   async ensureAudio() {
     if (!this.ctx) {
@@ -105,16 +120,18 @@ const app = {
   },
 
   renderTracks() {
-    this.trackUI.clear();
+    this.trackUI.clear(); this.msSync = [];
     const P = this.project;
-    const preset = h('select', { title: 'Add a synth track', onchange: () => { if (preset.value) this.addTrack('synth', { preset: preset.value }); preset.selectedIndex = 0; } },
-      h('option', { value: '' }, '+ Synth…'), Object.keys(SYNTH_PRESETS).map((k) => h('option', { value: k }, `${k} (${SYNTH_PRESETS[k].engine})`)));
+    const preset = presetSelect(null, (v) => { if (v) this.addTrack('synth', { preset: v }); preset.selectedIndex = 0; }, '+ Synth…');
+    const fold = (open) => { for (const t of P.tracks) t.open = open; this.renderTracks(); this.changed(); };
     $('tracks').replaceChildren(
+      h('div', { class: 'row tools' }, h('h2', null, `${P.tracks.length} track${P.tracks.length === 1 ? '' : 's'}`), btn('Collapse all', () => fold(false), { class: 'ghost' }), btn('Expand all', () => fold(true), { class: 'ghost' })),
       ...P.tracks.map((tr) => renderTrack(this, tr)),
       h('div', { class: 'add' },
         btn('+ Drum machine', () => this.addTrack('drum')), preset,
         btn('+ Granular', () => this.addTrack('gran')), btn('+ Audio track', () => this.addTrack('audio')),
         h('span', { class: 'hint' }, 'or drop audio files anywhere on this column to create audio tracks')));
+    renderMixer(this, $('mixer'));
   },
   renderSide() { renderFx(this, $('fx')); renderLfos(this, $('lfos')); },
   showProg() { const i = $('prog'); if (i) i.value = this.project.harmony.prog.map((d) => d + 1).join(' '); },
@@ -148,11 +165,15 @@ function renderTop() {
       h('h1', null, 'Web House'),
       h('button', { id: 'play', class: 'btn play', onclick: () => app.toggle(), title: 'Space bar' }, '▶ Play'),
       h('div', { id: 'status', class: 'status' }, 'stopped'),
-      h('div', { class: 'group' }, k('g.bpm'), k('g.swing'), k('g.pump'), k('g.spaceSize'), k('g.spaceTone'), k('g.vol')),
       h('canvas', { id: 'meter', width: 120, height: 10, title: 'Output level' }),
-      h('div', { class: 'group' }, sel(app, 'g.root'), sel(app, 'g.scale'), sel(app, 'g.bpc'), field('Chords', h('span', { class: 'inline' }, progSel, prog)), k('g.hevo')),
+      h('div', { class: 'tabs', role: 'tablist' }, [['studio', 'Studio'], ['mixer', 'Mixer']].map(([v, label]) =>
+        h('button', { class: 'btn' + (app.view === v ? ' on' : ''), 'data-view': v, role: 'tab', onclick: () => app.setView(v), title: v === 'mixer' ? 'Faders, meters and sends for every track' : 'Instruments, patterns and clips' }, label))),
       h('div', { class: 'group end' }, tmpl, btn('Save file', exportProject, { title: 'Download the session (including loaded samples) as a .json file' }),
         btn('Open file', () => { const i = h('input', { type: 'file', accept: '.json,application/json', onchange: () => i.files[0] && i.files[0].text().then(importProject) }); i.click(); }))),
+    h('div', { class: 'bar song' },
+      h('div', { class: 'group' }, h('b', null, 'Groove'), k('g.bpm'), k('g.swing'), k('g.pump')),
+      h('div', { class: 'group' }, h('b', null, 'Harmony'), sel(app, 'g.root'), sel(app, 'g.scale'), sel(app, 'g.bpc'), field('Chords', h('span', { class: 'inline' }, progSel, prog)), k('g.hevo')),
+      h('div', { class: 'group' }, h('b', null, 'Output'), k('g.spaceSize'), k('g.spaceTone'), k('g.vol'))),
     h('div', { class: 'bar rec' },
       h('b', null, 'Record'),
       field('Length (min)', h('input', { type: 'number', min: 0.25, max: 180, step: 0.25, value: R.minutes, onchange: (e) => { R.minutes = Math.min(180, Math.max(0.1, +e.target.value || 10)); e.target.value = R.minutes; app.changed(); } })),
@@ -165,8 +186,10 @@ function renderTop() {
       h('button', { id: 'recStop', class: 'btn', hidden: true, onclick: () => app.rec && app.rec.stop() }, 'Finish now'),
       h('progress', { id: 'recBar', max: 1, value: 0, hidden: true }), h('span', { id: 'recMsg', class: 'hint' }),
       h('div', { id: 'takes', class: 'takes' })));
-  app.showProg(); renderTakes();
+  app.showProg(); renderTakes(); fitTop();
 }
+const fitTop = () => document.documentElement.style.setProperty('--top', $('top').offsetHeight + 'px');
+window.addEventListener('resize', fitTop);
 
 // ---------------- recording ----------------
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -284,6 +307,7 @@ function frame() {
   shown = ids;
   if (app.xyTick) app.xyTick(eng);
   if (app.lfoTick) app.lfoTick();
+  if (app.view === 'mixer') for (const draw of app.mixUI) draw(eng);
   const st = $('status'), m = $('meter');
   if (eng && eng.playing && s >= 0) {
     const scale = SCALES[P.params['g.scale']], root = degToSemi(scale, eng.chord);
@@ -305,7 +329,8 @@ function boot() {
   let P = null;
   try { P = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch { /* ignore */ }
   if (!P || !P.params || !P.tracks) P = newProject();
-  app.setProject(P);
+  try { if (localStorage.getItem('webhouse.view') === 'mixer') app.view = 'mixer'; } catch { /* blocked */ }
+  app.setProject(P); app.setView(app.view);
 
   // Dropping audio outside a specific target creates a new audio track.
   window.addEventListener('dragover', (e) => { if (isFileDrag(e)) e.preventDefault(); });

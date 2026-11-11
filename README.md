@@ -19,9 +19,10 @@ Use a current Chrome, Edge, Safari or Firefox.
 
 | Area | What you get |
 | --- | --- |
-| **Tracks** | Add any number of drum machines, synths, granular engines and audio tracks. Each has volume, pan, mute/solo, FX send, a send to the global "Space" reverb, and *Drift* (the track fades out and back in at phrase boundaries so long takes get an arrangement). Tracks can be renamed, duplicated and deleted. |
-| **Drum machine** | 8 lanes × 16/32 steps with accent and ghost velocities. Three built-in kits (909 Deep, 808 Warm, Dusty) and seven deep-house rhythm presets. Patterns evolve every N bars around your edited "base" pattern; lanes can be locked. Level, tune and decay per lane, fills, and you can drop your own sample on any lane. |
-| **Synth engines** | Subtractive (2 osc + sub, 24 dB filter with envelope), 2-operator FM (Rhodes, bells, FM bass) and a drawbar organ. Ten presets cover pads, dub chords, basses, keys and leads. |
+| **Tracks** | Add any number of drum machines, synths, granular engines and audio tracks. Each has volume, pan, mute/solo, reordering, FX send, a send to the global "Space" reverb, and *Drift* (the track fades out and back in at phrase boundaries so long takes get an arrangement). Tracks can be renamed, duplicated and deleted. |
+| **Drum machine** | 8 lanes × 16/32 steps with accent and ghost velocities. Six built-in kits (909 Deep, 808 Warm, Dusty, 707 Crisp, Tape Soft, Electro Zap) and 24 rhythm presets, from classic deep house through garage, afro, tech, acid and Detroit to breakbeat, downtempo and half-time. Patterns evolve every N bars around your edited "base" pattern; lanes can be locked. Level, tune and decay per lane, fills, and you can drop your own sample on any lane. |
+| **Synth engines** | Seven engines: subtractive (2 osc + sub, 24 dB filter), 2-operator FM, drawbar organ, supersaw, acid (303-style resonant mono line with accent and slide), wavefolder (West Coast style) and formant/vocal. 34 presets in five groups: classic house, pads & ambient, acid & techno, trance & synthwave, experimental. |
+| **Mixer** | A second page with a channel strip per track: volume fader, peak meter with hold, pan, FX and Space sends, Drift, mute/solo, plus a master strip. Faders accept LFOs like any knob. |
 | **Evolving sequencers** | Every synth has its own generative sequencer (chord stabs, bassline, melody/arp or sustained pad) that follows the session's key, scale and chord progression and mutates every 1–32 bars at an amount you set. The pattern stays editable in a step grid. |
 | **Granular engine** | Position, scan speed, spray, grain size, density, timing jitter, five grain envelopes, pitch with four modes (free, octaves, fifths, follow the chords), detune, reverse probability, stereo spread, high/low-pass filters and its own evolution. Five built-in textures, or drop in any audio file. |
 | **Audio tracks** | Drag audio files from your computer onto a track (or anywhere on the track column). Clips loop in time with the song and can be moved, trimmed, split, duplicated, reversed, pitched, time-fitted to a bar length, faded and gain-adjusted. |
@@ -111,5 +112,5 @@ licences to worry about.
 | `js/fx.js` | Effects |
 | `js/recorder.js` | Live recorder (AudioWorklet), offline renderer, WAV encoder |
 | `js/project.js` | Session model and templates |
-| `js/main.js`, `js/tracks.js`, `js/side.js`, `js/ui.js` | Interface |
+| `js/main.js`, `js/tracks.js`, `js/mixer.js`, `js/side.js`, `js/ui.js` | Interface |
 | `tools/` | Local server and headless renderer |

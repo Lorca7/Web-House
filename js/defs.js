@@ -59,7 +59,7 @@ export const TRACK_COMMON = [
 // ---------- drums ----------
 export const LANES = ['Kick', 'Clap', 'Rim', 'Cl Hat', 'Op Hat', 'Shaker', 'Perc', 'Tom'];
 const LANE_LEVEL = [1, 0.75, 0.5, 0.45, 0.4, 0.3, 0.5, 0.6];
-export const KIT_NAMES = ['909 Deep', '808 Warm', 'Dusty'];
+export const KIT_NAMES = ['909 Deep', '808 Warm', 'Dusty', '707 Crisp', 'Tape Soft', 'Electro Zap'];
 export const DRUM_DEFS = [
   choice('kit', 'Kit', KIT_NAMES, '909 Deep'),
   choice('evoBars', 'Evolve every', BARS([1, 2, 4, 8, 16]), 4),
@@ -80,6 +80,23 @@ export const DRUM_PATTERNS = {
   'Dub Minimal': ['X...X...X...X...', '................', '....x.......x...', '..x...x...x...x.', '..........X.....', 'o.o.o.o.o.o.o.o.', '.......x........', '...............o'],
   'Broken': ['X.....x...X.....', '....X.......X...', '.......x.x......', 'x.x.x.xxx.x.x.x.', '...X.......X....', 'oxooxoooxooxoooo', '..x.....x....x..', '.............oo.'],
   'Ambient Pulse': ['X.......X.......', '............o...', '....o.........o.', '..o...o...o...o.', '......x.........', 'o.o.o.o.o.o.o.o.', '.........x......', '................'],
+  'Chicago Jack': ['X...X...X...X...', '....X.......X...', '..x..x....x..x..', 'x.x.x.x.x.x.x.x.', '..X...X...X...X.', '................', '...x......x.....', '......o.......oo'],
+  'Disco House': ['X...X...X...X...', '....X.......X...', '................', 'x.xxx.xxx.xxx.xx', '..X...X...X...X.', 'oxoxoxoxoxoxoxox', '.......x.......x', '................'],
+  'Garage 2-Step': ['X.........X.....', '....X.......X...', '.......o.o......', 'x.x.x.x.x.x.x.x.', '...x.......x....', 'o.oxo.oxo.oxo.ox', '..x......x...x..', '................'],
+  'Tech House': ['X...X...X...X...', '....X.......X...', '.o.....o..o....o', '..x...x...x...x.', '..X...X...X...X.', 'xxoxxxoxxxoxxxox', '...x.x.....x.x..', '.........o......'],
+  'Afro House': ['X...X...X...X...', '............X...', '...x..x...x..x..', 'x.xxx.xxx.xxx.xx', '......x.......x.', 'xoxxxoxxxoxxxoxx', 'x..x..x.x..x..x.', '..o....o.o....o.'],
+  'Tribal': ['X...X...X...X...', '............X...', '..x..x.x..x..x.x', 'x.x.x.x.x.x.x.x.', '..x.......x.....', 'o.o.o.o.o.o.o.o.', 'x.xx.x.xx.xx.x.x', '...x..x....x..xo'],
+  'Lo-fi House': ['X..oX...X..oX...', '....X.......X..o', '.......o........', 'o.xoo.xoo.xoo.xo', '..x...x...x...x.', 'xoxoxoxoxoxoxoxo', '..........x.....', '................'],
+  'Acid Trax': ['X...X...X...X...', '....X.......X...', '..x...x...x...x.', 'xxxxxxxxxxxxxxxx', '..X...X...X...X.', '................', '.x..x..x.x..x..x', '..............x.'],
+  'Detroit': ['X...X...X...X...', '....X.......X...', '..o..o..o..o..o.', 'x.xxx.xxx.xxx.xx', '..X...X...X...X.', '................', '......x......x..', '.x.......x......'],
+  'Minimal Click': ['X...X...X...X...', '................', '..o...ox..o...o.', '....x.......x...', '..........x.....', 'o..o..o..o..o..o', '.x.....o.x......', '................'],
+  'Balearic': ['X...X...X...X...', '....X.......X...', '................', 'x.x.x.x.x.x.x.x.', '..x...x...x...X.', 'xoxoxoxoxoxoxoxo', 'x..x..x...x.x...', '.....o.......o..'],
+  'Electro Break': ['X.....X...X.....', '....X.......X...', '..............o.', 'x.x.x.x.x.x.x.x.', '.......x........', '................', '...x.....x......', '........o..o....'],
+  'Breakbeat': ['X.........X..o..', '....X.......X...', '.......o.o.....o', 'x.x.x.x.x.x.x.x.', '......x.......x.', 'o.o.o.o.o.o.o.o.', '..x.............', '................'],
+  'Half-time Chill': ['X.........o.....', '........X.......', '....o.........o.', 'x.o.x.o.x.o.x.o.', '......x.........', 'o.o.o.o.o.o.o.o.', '...........x....', '..............o.'],
+  'Downtempo': ['X......o..X.....', '....X.......X...', '..o.......o....o', 'x.x.x.x.x.x.x.x.', '..............x.', 'ooxoooxoooxoooxo', '.....x.......x..', '................'],
+  'Trance Drive': ['X...X...X...X...', '....X.......X...', '................', '.xxx.xxx.xxx.xxx', '..X...X...X...X.', 'xoxoxoxoxoxoxoxo', '................', '...............o'],
+  'Hats Only': ['................', '................', '................', 'x.xox.xox.xox.xo', '..X...X...X...X.', 'o.o.o.o.o.o.o.o.', '................', '................'],
   'Four Floor Only': ['X...X...X...X...', '................', '................', '................', '..x...x...x...x.', '................', '................', '................'],
 };
 export function parsePattern(rows) {
@@ -106,7 +123,7 @@ export function evolveDrums(tr, amount, rand) {
 // ---------- synth sequencer ----------
 export const ROLES = [['chords', 'Chord stabs'], ['bass', 'Bassline'], ['lead', 'Melody / arp'], ['pad', 'Sustained pad']];
 export const SEQ_DEFS = [
-  choice('engine', 'Engine', [['sub', 'Subtractive'], ['fm', 'FM (2-op)'], ['organ', 'Drawbar organ']], 'sub'),
+  choice('engine', 'Engine', [['sub', 'Subtractive'], ['fm', 'FM (2-op)'], ['organ', 'Drawbar organ'], ['saw', 'Supersaw'], ['acid', 'Acid (303 style)'], ['fold', 'Wavefolder'], ['vox', 'Formant / vocal']], 'sub'),
   choice('role', 'Sequencer', ROLES, 'chords'),
   choice('len', 'Steps', [16, 32], 16),
   choice('evoBars', 'Evolve every', BARS([1, 2, 4, 8, 16, 32]), 4),
@@ -159,21 +176,100 @@ export const ENGINES = {
     num('tone', 'Tone', 200, 18000, 4000, 'exp', 'Hz'),
     num('level', 'Level', 0, 1, 0.7),
   ],
+  // five detuned saws, hard-panned sides (trance / rave / string machine)
+  saw: [
+    num('detune', 'Detune', 0, 60, 22, 'lin', ' ct'),
+    num('mix', 'Side mix', 0, 1, 0.7),
+    num('cutoff', 'Cutoff', 60, 16000, 2500, 'exp', 'Hz'),
+    num('res', 'Reso', 0.1, 18, 1),
+    num('envAmt', 'Flt env', 0, 5, 1, 'lin', ' oct'),
+    num('fdecay', 'Flt decay', 0.02, 4, 0.4, 'exp', 's'),
+    num('attack', 'Attack', 0.002, 4, 0.01, 'exp', 's'),
+    num('decay', 'Decay', 0.02, 4, 0.5, 'exp', 's'),
+    num('sustain', 'Sustain', 0, 1, 0.7),
+    num('release', 'Release', 0.02, 8, 0.5, 'exp', 's'),
+    num('spread', 'Width', 0, 1, 0.8),
+    num('level', 'Level', 0, 1, 0.6),
+  ],
+  // mono squelch: resonant filter, accent on loud steps, slide between overlapping notes
+  acid: [
+    choice('wave', 'Wave', [['sawtooth', 'Saw'], ['square', 'Square']], 'sawtooth'),
+    num('cutoff', 'Cutoff', 60, 8000, 400, 'exp', 'Hz'),
+    num('res', 'Reso', 0.5, 25, 13),
+    num('envAmt', 'Env mod', 0, 6, 3, 'lin', ' oct'),
+    num('fdecay', 'Decay', 0.03, 2, 0.2, 'exp', 's'),
+    num('accent', 'Accent', 0, 1, 0.6),
+    num('slide', 'Slide', 0, 0.4, 0.06, 'lin', 's'),
+    num('drive', 'Drive', 0, 1, 0.3),
+    num('level', 'Level', 0, 1, 0.7),
+  ],
+  // West-coast style: sine pushed through a wavefolder whose depth has its own envelope
+  fold: [
+    num('fold', 'Fold', 0, 1, 0.4),
+    num('fenv', 'Fold env', 0, 1, 0.5),
+    num('fdecay', 'Fold decay', 0.02, 4, 0.3, 'exp', 's'),
+    choice('harm', 'Partial', [[0.5, 'Sub'], [1.5, 'Fifth'], [2, 'Octave'], [3, '3rd harm'], [5, '5th harm']], 2),
+    num('hmix', 'Partial mix', 0, 1, 0.2),
+    num('attack', 'Attack', 0.002, 4, 0.004, 'exp', 's'),
+    num('decay', 'Decay', 0.02, 4, 0.4, 'exp', 's'),
+    num('sustain', 'Sustain', 0, 1, 0.3),
+    num('release', 'Release', 0.02, 8, 0.4, 'exp', 's'),
+    num('tone', 'Tone', 200, 18000, 7000, 'exp', 'Hz'),
+    num('level', 'Level', 0, 1, 0.6),
+  ],
+  // two saws through three vowel formants; "Vowel" sweeps oo – oh – ah – eh – ee
+  vox: [
+    num('vowel', 'Vowel', 0, 1, 0.5),
+    num('q', 'Sharpness', 2, 20, 8),
+    num('detune', 'Detune', 0, 40, 12, 'lin', ' ct'),
+    num('vib', 'Vibrato', 0, 1, 0.2),
+    num('attack', 'Attack', 0.002, 4, 0.05, 'exp', 's'),
+    num('decay', 'Decay', 0.02, 4, 0.5, 'exp', 's'),
+    num('sustain', 'Sustain', 0, 1, 0.8),
+    num('release', 'Release', 0.02, 8, 0.6, 'exp', 's'),
+    num('tone', 'Tone', 200, 18000, 9000, 'exp', 'Hz'),
+    num('level', 'Level', 0, 1, 0.7),
+  ],
 };
 
 // preset: engine + role + values (keys relative to the track prefix)
 export const SYNTH_PRESETS = {
-  'Warm Pad': { engine: 'sub', role: 'pad', oct: 0, voicing: '9th', gate: 1.05, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'sawtooth', 'sub.oct2': 0, 'sub.detune': 14, 'sub.sub': 0.2, 'sub.cutoff': 800, 'sub.res': 1, 'sub.envAmt': 0.4, 'sub.fdecay': 2, 'sub.attack': 1.4, 'sub.decay': 2, 'sub.sustain': 0.8, 'sub.release': 3.5, 'sub.spread': 0.8, 'sub.level': 0.5 } },
-  'Dub Chord': { engine: 'sub', role: 'chords', oct: 1, voicing: '7th', gate: 0.5, density: 0.25, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'square', 'sub.oct2': 0, 'sub.detune': 9, 'sub.sub': 0, 'sub.cutoff': 420, 'sub.res': 6, 'sub.envAmt': 2.6, 'sub.fdecay': 0.22, 'sub.attack': 0.003, 'sub.decay': 0.3, 'sub.sustain': 0.05, 'sub.release': 0.35, 'sub.spread': 0.5, 'sub.level': 0.7 } },
-  'Deep Bass': { engine: 'sub', role: 'bass', oct: -1, gate: 0.7, density: 0.45, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'square', 'sub.oct2': 0, 'sub.detune': 4, 'sub.sub': 0.8, 'sub.cutoff': 260, 'sub.res': 2.5, 'sub.envAmt': 1.6, 'sub.fdecay': 0.14, 'sub.attack': 0.003, 'sub.decay': 0.2, 'sub.sustain': 0.6, 'sub.release': 0.1, 'sub.spread': 0, 'sub.level': 0.85 } },
-  'Sub Sine Bass': { engine: 'sub', role: 'bass', oct: -1, gate: 0.9, density: 0.3, set: { 'sub.wave1': 'sine', 'sub.wave2': 'triangle', 'sub.oct2': 0, 'sub.detune': 0, 'sub.sub': 0.5, 'sub.cutoff': 900, 'sub.res': 0.7, 'sub.envAmt': 0.3, 'sub.fdecay': 0.2, 'sub.attack': 0.005, 'sub.decay': 0.3, 'sub.sustain': 0.8, 'sub.release': 0.15, 'sub.spread': 0, 'sub.level': 0.9 } },
-  'Pluck Lead': { engine: 'sub', role: 'lead', oct: 1, gate: 0.6, density: 0.3, set: { 'sub.wave1': 'square', 'sub.wave2': 'sawtooth', 'sub.oct2': 1, 'sub.detune': 6, 'sub.sub': 0, 'sub.cutoff': 900, 'sub.res': 3, 'sub.envAmt': 2.5, 'sub.fdecay': 0.18, 'sub.attack': 0.002, 'sub.decay': 0.25, 'sub.sustain': 0.1, 'sub.release': 0.5, 'sub.spread': 0.6, 'sub.level': 0.5 } },
-  'Rhodes Keys': { engine: 'fm', role: 'chords', oct: 1, voicing: 'rootless 9', gate: 1.2, density: 0.3, set: { 'fm.ratio': 1, 'fm.index': 1.8, 'fm.idecay': 0.5, 'fm.isus': 0.12, 'fm.detune': 6, 'fm.attack': 0.003, 'fm.decay': 1.4, 'fm.sustain': 0.25, 'fm.release': 0.7, 'fm.tone': 5000, 'fm.level': 0.6 } },
-  'FM Bell': { engine: 'fm', role: 'lead', oct: 1, gate: 1.5, density: 0.2, set: { 'fm.ratio': 7, 'fm.index': 1.2, 'fm.idecay': 0.35, 'fm.isus': 0.05, 'fm.detune': 9, 'fm.attack': 0.002, 'fm.decay': 1.8, 'fm.sustain': 0, 'fm.release': 1.6, 'fm.tone': 9000, 'fm.level': 0.4 } },
-  'FM Bass': { engine: 'fm', role: 'bass', oct: -1, gate: 0.7, density: 0.4, set: { 'fm.ratio': 1, 'fm.index': 2.6, 'fm.idecay': 0.12, 'fm.isus': 0.1, 'fm.detune': 0, 'fm.attack': 0.002, 'fm.decay': 0.3, 'fm.sustain': 0.5, 'fm.release': 0.1, 'fm.tone': 2500, 'fm.level': 0.85 } },
-  'Organ Bass': { engine: 'organ', role: 'bass', oct: -1, gate: 0.6, density: 0.45, set: { 'organ.d1': 1, 'organ.d2': 0.8, 'organ.d3': 0.45, 'organ.d4': 0.1, 'organ.d5': 0, 'organ.d6': 0, 'organ.click': 0.5, 'organ.attack': 0.003, 'organ.release': 0.07, 'organ.tone': 2200, 'organ.level': 0.85 } },
-  'Organ Stab': { engine: 'organ', role: 'chords', oct: 1, voicing: '7th', gate: 0.45, density: 0.3, set: { 'organ.d1': 0.3, 'organ.d2': 1, 'organ.d3': 0.6, 'organ.d4': 0.5, 'organ.d5': 0.2, 'organ.d6': 0.15, 'organ.click': 0.6, 'organ.attack': 0.003, 'organ.release': 0.12, 'organ.tone': 5000, 'organ.level': 0.5 } },
+  'Warm Pad': { cat: 'Pads & ambient', engine: 'sub', role: 'pad', oct: 0, voicing: '9th', gate: 1.05, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'sawtooth', 'sub.oct2': 0, 'sub.detune': 14, 'sub.sub': 0.2, 'sub.cutoff': 800, 'sub.res': 1, 'sub.envAmt': 0.4, 'sub.fdecay': 2, 'sub.attack': 1.4, 'sub.decay': 2, 'sub.sustain': 0.8, 'sub.release': 3.5, 'sub.spread': 0.8, 'sub.level': 0.5 } },
+  'Dub Chord': { cat: 'Classic house', engine: 'sub', role: 'chords', oct: 1, voicing: '7th', gate: 0.5, density: 0.25, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'square', 'sub.oct2': 0, 'sub.detune': 9, 'sub.sub': 0, 'sub.cutoff': 420, 'sub.res': 6, 'sub.envAmt': 2.6, 'sub.fdecay': 0.22, 'sub.attack': 0.003, 'sub.decay': 0.3, 'sub.sustain': 0.05, 'sub.release': 0.35, 'sub.spread': 0.5, 'sub.level': 0.7 } },
+  'Deep Bass': { cat: 'Classic house', engine: 'sub', role: 'bass', oct: -1, gate: 0.7, density: 0.45, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'square', 'sub.oct2': 0, 'sub.detune': 4, 'sub.sub': 0.8, 'sub.cutoff': 260, 'sub.res': 2.5, 'sub.envAmt': 1.6, 'sub.fdecay': 0.14, 'sub.attack': 0.003, 'sub.decay': 0.2, 'sub.sustain': 0.6, 'sub.release': 0.1, 'sub.spread': 0, 'sub.level': 0.85 } },
+  'Sub Sine Bass': { cat: 'Classic house', engine: 'sub', role: 'bass', oct: -1, gate: 0.9, density: 0.3, set: { 'sub.wave1': 'sine', 'sub.wave2': 'triangle', 'sub.oct2': 0, 'sub.detune': 0, 'sub.sub': 0.5, 'sub.cutoff': 900, 'sub.res': 0.7, 'sub.envAmt': 0.3, 'sub.fdecay': 0.2, 'sub.attack': 0.005, 'sub.decay': 0.3, 'sub.sustain': 0.8, 'sub.release': 0.15, 'sub.spread': 0, 'sub.level': 0.9 } },
+  'Pluck Lead': { cat: 'Classic house', engine: 'sub', role: 'lead', oct: 1, gate: 0.6, density: 0.3, set: { 'sub.wave1': 'square', 'sub.wave2': 'sawtooth', 'sub.oct2': 1, 'sub.detune': 6, 'sub.sub': 0, 'sub.cutoff': 900, 'sub.res': 3, 'sub.envAmt': 2.5, 'sub.fdecay': 0.18, 'sub.attack': 0.002, 'sub.decay': 0.25, 'sub.sustain': 0.1, 'sub.release': 0.5, 'sub.spread': 0.6, 'sub.level': 0.75 } },
+  'Rhodes Keys': { cat: 'Classic house', engine: 'fm', role: 'chords', oct: 1, voicing: 'rootless 9', gate: 1.2, density: 0.3, set: { 'fm.ratio': 1, 'fm.index': 1.8, 'fm.idecay': 0.5, 'fm.isus': 0.12, 'fm.detune': 6, 'fm.attack': 0.003, 'fm.decay': 1.4, 'fm.sustain': 0.25, 'fm.release': 0.7, 'fm.tone': 5000, 'fm.level': 0.6 } },
+  'FM Bell': { cat: 'Pads & ambient', engine: 'fm', role: 'lead', oct: 1, gate: 1.5, density: 0.2, set: { 'fm.ratio': 7, 'fm.index': 1.2, 'fm.idecay': 0.35, 'fm.isus': 0.05, 'fm.detune': 9, 'fm.attack': 0.002, 'fm.decay': 1.8, 'fm.sustain': 0, 'fm.release': 1.6, 'fm.tone': 9000, 'fm.level': 0.4 } },
+  'FM Bass': { cat: 'Classic house', engine: 'fm', role: 'bass', oct: -1, gate: 0.7, density: 0.4, set: { 'fm.ratio': 1, 'fm.index': 2.6, 'fm.idecay': 0.12, 'fm.isus': 0.1, 'fm.detune': 0, 'fm.attack': 0.002, 'fm.decay': 0.3, 'fm.sustain': 0.5, 'fm.release': 0.1, 'fm.tone': 2500, 'fm.level': 0.85 } },
+  'Organ Bass': { cat: 'Classic house', engine: 'organ', role: 'bass', oct: -1, gate: 0.6, density: 0.45, set: { 'organ.d1': 1, 'organ.d2': 0.8, 'organ.d3': 0.45, 'organ.d4': 0.1, 'organ.d5': 0, 'organ.d6': 0, 'organ.click': 0.5, 'organ.attack': 0.003, 'organ.release': 0.07, 'organ.tone': 2200, 'organ.level': 0.85 } },
+  'Organ Stab': { cat: 'Classic house', engine: 'organ', role: 'chords', oct: 1, voicing: '7th', gate: 0.45, density: 0.3, set: { 'organ.d1': 0.3, 'organ.d2': 1, 'organ.d3': 0.6, 'organ.d4': 0.5, 'organ.d5': 0.2, 'organ.d6': 0.15, 'organ.click': 0.6, 'organ.attack': 0.003, 'organ.release': 0.12, 'organ.tone': 5000, 'organ.level': 0.5 } },
+  'House Piano': { cat: 'Classic house', engine: 'fm', role: 'chords', oct: 1, voicing: 'triad', gate: 0.9, density: 0.35, set: { 'fm.ratio': 1, 'fm.index': 3.2, 'fm.idecay': 0.18, 'fm.isus': 0.08, 'fm.detune': 3, 'fm.decay': 0.9, 'fm.sustain': 0.1, 'fm.release': 0.35, 'fm.tone': 7000, 'fm.level': 0.6 } },
+  'Supersaw Pad': { cat: 'Pads & ambient', engine: 'saw', role: 'pad', oct: 0, voicing: '9th', gate: 1.05, set: { 'saw.detune': 26, 'saw.cutoff': 1400, 'saw.envAmt': 0.3, 'saw.fdecay': 2, 'saw.attack': 1.2, 'saw.decay': 2, 'saw.sustain': 0.85, 'saw.release': 3, 'saw.level': 0.4 } },
+  'String Machine': { cat: 'Pads & ambient', engine: 'saw', role: 'pad', oct: 1, voicing: '7th', gate: 1, set: { 'saw.detune': 14, 'saw.mix': 0.9, 'saw.cutoff': 3200, 'saw.res': 0.5, 'saw.envAmt': 0, 'saw.attack': 0.5, 'saw.sustain': 0.9, 'saw.release': 1.6, 'saw.level': 0.35 } },
+  'Choir Pad': { cat: 'Pads & ambient', engine: 'vox', role: 'pad', oct: 1, voicing: '7th', gate: 1.05, set: { 'vox.vowel': 0.45, 'vox.q': 6, 'vox.detune': 18, 'vox.vib': 0.3, 'vox.attack': 0.9, 'vox.sustain': 0.9, 'vox.release': 2.5, 'vox.tone': 6000, 'vox.level': 0.4 } },
+  'Glass Pad': { cat: 'Pads & ambient', engine: 'fm', role: 'pad', oct: 1, voicing: 'fifths', gate: 1.05, set: { 'fm.ratio': 2, 'fm.index': 0.9, 'fm.idecay': 2.5, 'fm.isus': 0.4, 'fm.detune': 10, 'fm.attack': 1.5, 'fm.decay': 3, 'fm.sustain': 0.7, 'fm.release': 4, 'fm.tone': 8000, 'fm.level': 0.4 } },
+  'Dark Drone': { cat: 'Pads & ambient', engine: 'fold', role: 'pad', oct: -1, voicing: 'fifths', gate: 1.1, set: { 'fold.fold': 0.25, 'fold.fenv': 0.2, 'fold.fdecay': 3, 'fold.harm': 0.5, 'fold.hmix': 0.5, 'fold.attack': 2.5, 'fold.sustain': 0.9, 'fold.release': 5, 'fold.tone': 1800, 'fold.level': 0.6 } },
+  'Acid Line': { cat: 'Acid & techno', engine: 'acid', role: 'bass', oct: -1, gate: 0.9, density: 0.75, set: {} },
+  'Acid Squelch Lead': { cat: 'Acid & techno', engine: 'acid', role: 'lead', oct: 0, gate: 1.1, density: 0.6, set: { 'acid.wave': 'square', 'acid.cutoff': 700, 'acid.res': 18, 'acid.envAmt': 3.6, 'acid.fdecay': 0.3, 'acid.slide': 0.09, 'acid.drive': 0.6, 'acid.level': 0.5 } },
+  'Reese Bass': { cat: 'Acid & techno', engine: 'saw', role: 'bass', oct: -1, gate: 1.4, density: 0.25, set: { 'saw.detune': 34, 'saw.mix': 1, 'saw.cutoff': 380, 'saw.res': 3, 'saw.envAmt': 0.6, 'saw.fdecay': 0.6, 'saw.sustain': 0.9, 'saw.release': 0.2, 'saw.spread': 0.3, 'saw.level': 0.75 } },
+  'Rave Stab': { cat: 'Acid & techno', engine: 'saw', role: 'chords', oct: 1, voicing: 'triad', gate: 0.5, density: 0.3, set: { 'saw.detune': 30, 'saw.cutoff': 1800, 'saw.res': 2, 'saw.envAmt': 2.5, 'saw.fdecay': 0.15, 'saw.attack': 0.002, 'saw.decay': 0.2, 'saw.sustain': 0.2, 'saw.release': 0.25, 'saw.level': 0.85 } },
+  'Techno Rumble': { cat: 'Acid & techno', engine: 'sub', role: 'bass', oct: -2, gate: 1.5, density: 0.7, set: { 'sub.wave1': 'sine', 'sub.wave2': 'triangle', 'sub.detune': 0, 'sub.sub': 0.3, 'sub.cutoff': 140, 'sub.res': 1, 'sub.envAmt': 0.5, 'sub.attack': 0.02, 'sub.decay': 0.2, 'sub.sustain': 0.7, 'sub.release': 0.2, 'sub.spread': 0, 'sub.level': 0.95 } },
+  'Trance Lead': { cat: 'Trance & synthwave', engine: 'saw', role: 'lead', oct: 1, gate: 0.9, density: 0.5, set: { 'saw.detune': 28, 'saw.cutoff': 3000, 'saw.res': 1.5, 'saw.envAmt': 1.2, 'saw.fdecay': 0.3, 'saw.sustain': 0.6, 'saw.release': 0.4, 'saw.level': 0.7 } },
+  'Trance Pluck': { cat: 'Trance & synthwave', engine: 'saw', role: 'lead', oct: 1, gate: 0.4, density: 0.7, set: { 'saw.detune': 18, 'saw.cutoff': 500, 'saw.res': 2.5, 'saw.envAmt': 3.5, 'saw.fdecay': 0.12, 'saw.attack': 0.002, 'saw.decay': 0.18, 'saw.sustain': 0, 'saw.release': 0.3, 'saw.level': 0.8 } },
+  'Synthwave Bass': { cat: 'Trance & synthwave', engine: 'sub', role: 'bass', oct: -1, gate: 0.6, density: 0.9, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'square', 'sub.oct2': -1, 'sub.detune': 6, 'sub.sub': 0.2, 'sub.cutoff': 500, 'sub.res': 2, 'sub.envAmt': 2, 'sub.fdecay': 0.12, 'sub.attack': 0.002, 'sub.decay': 0.15, 'sub.sustain': 0.4, 'sub.release': 0.08, 'sub.spread': 0, 'sub.level': 0.8 } },
+  'Analog Brass': { cat: 'Trance & synthwave', engine: 'sub', role: 'chords', oct: 0, voicing: '7th', gate: 1.6, density: 0.2, set: { 'sub.wave1': 'sawtooth', 'sub.wave2': 'sawtooth', 'sub.detune': 7, 'sub.sub': 0, 'sub.cutoff': 700, 'sub.res': 1.2, 'sub.envAmt': 2, 'sub.fdecay': 0.9, 'sub.attack': 0.06, 'sub.decay': 0.6, 'sub.sustain': 0.7, 'sub.release': 0.4, 'sub.spread': 0.6, 'sub.level': 0.5 } },
+  'Chiptune Arp': { cat: 'Trance & synthwave', engine: 'sub', role: 'lead', oct: 1, gate: 0.5, density: 0.85, set: { 'sub.wave1': 'square', 'sub.wave2': 'square', 'sub.oct2': 1, 'sub.detune': 0, 'sub.sub': 0, 'sub.cutoff': 9000, 'sub.res': 0.5, 'sub.envAmt': 0, 'sub.attack': 0.002, 'sub.decay': 0.08, 'sub.sustain': 0.5, 'sub.release': 0.05, 'sub.spread': 0.2, 'sub.level': 0.55 } },
+  'West Coast Bongo': { cat: 'Experimental', engine: 'fold', role: 'lead', oct: 0, gate: 0.4, density: 0.5, set: { 'fold.fold': 0.15, 'fold.fenv': 0.9, 'fold.fdecay': 0.08, 'fold.harm': 1.5, 'fold.hmix': 0.3, 'fold.decay': 0.15, 'fold.sustain': 0, 'fold.release': 0.2, 'fold.level': 0.95 } },
+  'Fold Bass': { cat: 'Experimental', engine: 'fold', role: 'bass', oct: -1, gate: 0.8, density: 0.45, set: { 'fold.fold': 0.35, 'fold.fenv': 0.6, 'fold.fdecay': 0.2, 'fold.harm': 0.5, 'fold.hmix': 0.6, 'fold.decay': 0.3, 'fold.sustain': 0.5, 'fold.release': 0.12, 'fold.tone': 3000, 'fold.level': 0.95 } },
+  'Metallic Arp': { cat: 'Experimental', engine: 'fold', role: 'lead', oct: 1, gate: 0.7, density: 0.6, set: { 'fold.fold': 0.6, 'fold.fenv': 0.4, 'fold.fdecay': 0.5, 'fold.harm': 5, 'fold.hmix': 0.5, 'fold.decay': 0.6, 'fold.sustain': 0.1, 'fold.release': 0.8, 'fold.tone': 9000, 'fold.level': 0.65 } },
+  'Vowel Bass': { cat: 'Experimental', engine: 'vox', role: 'bass', oct: -1, gate: 0.8, density: 0.45, set: { 'vox.vowel': 0.3, 'vox.q': 10, 'vox.detune': 5, 'vox.vib': 0, 'vox.attack': 0.005, 'vox.decay': 0.25, 'vox.sustain': 0.6, 'vox.release': 0.12, 'vox.tone': 5000, 'vox.level': 1 } },
+  'Talking Lead': { cat: 'Experimental', engine: 'vox', role: 'lead', oct: 0, gate: 1, density: 0.35, set: { 'vox.vowel': 0.7, 'vox.q': 12, 'vox.detune': 8, 'vox.vib': 0.5, 'vox.attack': 0.02, 'vox.sustain': 0.7, 'vox.release': 0.4, 'vox.level': 0.8 } },
+  'Kalimba': { cat: 'Experimental', engine: 'fm', role: 'lead', oct: 1, gate: 0.8, density: 0.45, set: { 'fm.ratio': 3, 'fm.index': 1.4, 'fm.idecay': 0.06, 'fm.isus': 0, 'fm.detune': 2, 'fm.decay': 0.5, 'fm.sustain': 0, 'fm.release': 0.5, 'fm.tone': 6000, 'fm.level': 0.55 } },
+  'Steel Drum': { cat: 'Experimental', engine: 'fm', role: 'lead', oct: 1, gate: 0.9, density: 0.4, set: { 'fm.ratio': 2, 'fm.index': 2.4, 'fm.idecay': 0.25, 'fm.isus': 0.2, 'fm.detune': 4, 'fm.decay': 0.7, 'fm.sustain': 0.1, 'fm.release': 0.6, 'fm.tone': 8000, 'fm.level': 0.5 } },
+  'Sci-fi Bleeps': { cat: 'Experimental', engine: 'fm', role: 'lead', oct: 2, gate: 0.3, density: 0.55, set: { 'fm.ratio': 7, 'fm.index': 4, 'fm.idecay': 0.05, 'fm.isus': 0.3, 'fm.detune': 0, 'fm.decay': 0.1, 'fm.sustain': 0.3, 'fm.release': 0.08, 'fm.tone': 12000, 'fm.level': 0.6 } },
 };
+export const PRESET_CATS = ['Classic house', 'Pads & ambient', 'Acid & techno', 'Trance & synthwave', 'Experimental'];
 
 const WEIGHTS = {
   chords: [0.5, 0, 0.2, 0.8, 0, 0.1, 0.8, 0, 0.3, 0, 0.2, 0.6, 0, 0.1, 0.9, 0.1],

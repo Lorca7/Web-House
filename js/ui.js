@@ -1,5 +1,6 @@
 // Shared UI widgets: knobs, selects, waveform drawing.
 import { DEFS, h, clamp, toNorm, fromNorm, fmt } from './core.js';
+import { SYNTH_PRESETS, PRESET_CATS } from './defs.js';
 
 const R = 15, C = 2 * Math.PI * R, ARC = 0.75 * C;
 
@@ -49,12 +50,54 @@ export function knob(app, id, o = {}) {
   });
   el.addEventListener('dblclick', () => app.setParam(id, d.def));
   el.addEventListener('wheel', (e) => { e.preventDefault(); app.setParam(id, fromNorm(d, toNorm(d, app.project.params[id]) - Math.sign(e.deltaY) * 0.02)); }, { passive: false });
-  el.addEventListener('dragover', (e) => { if (app.dragLfo != null) { e.preventDefault(); el.classList.add('drop'); } });
-  el.addEventListener('dragleave', () => el.classList.remove('drop'));
-  el.addEventListener('drop', (e) => { el.classList.remove('drop'); if (app.dragLfo != null) { e.preventDefault(); e.stopPropagation(); app.assignLfo(app.dragLfo, id); } });
+  lfoDrop(app, el, id);
   track(app, id, ctrl);
   ctrl.update();
   return el;
+}
+
+function lfoDrop(app, el, id) {
+  el.addEventListener('dragover', (e) => { if (app.dragLfo != null) { e.preventDefault(); el.classList.add('drop'); } });
+  el.addEventListener('dragleave', () => el.classList.remove('drop'));
+  el.addEventListener('drop', (e) => { el.classList.remove('drop'); if (app.dragLfo != null) { e.preventDefault(); e.stopPropagation(); app.assignLfo(app.dragLfo, id); } });
+}
+
+// Vertical fader bound to a numeric parameter (mixer). Same gestures as a knob; also an LFO drop target.
+export function fader(app, id, o = {}) {
+  const d = DEFS.get(id), mod = h('i', { class: 'f-mod' });
+  const el = h('div', { class: 'fader', role: 'slider', tabIndex: 0, 'aria-label': o.label || d.label, title: `${o.label || d.label} — drag, double-click to reset, drop an LFO here` },
+    h('i', { class: 'f-slot' }), h('i', { class: 'f-fill' }), mod, h('i', { class: 'f-thumb' }));
+  el.dataset.id = id;
+  const norm = () => clamp(toNorm(d, app.project.params[id]));
+  const ctrl = {
+    el,
+    update() { el.style.setProperty('--n', norm()); el.classList.toggle('mapped', app.isMapped(id)); if (o.onvalue) o.onvalue(app.project.params[id]); },
+    showEff(v) { mod.style.opacity = v == null ? 0 : 1; if (v != null) el.style.setProperty('--m', clamp(toNorm(d, v))); },
+  };
+  el.addEventListener('pointerdown', (e) => {
+    if (app.armedLfo != null) { app.assignLfo(app.armedLfo, id); return; }
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    let y = e.clientY, n = norm();
+    const range = el.clientHeight - 22;
+    const move = (ev) => { n = clamp(n + (y - ev.clientY) / (ev.shiftKey ? range * 5 : range)); y = ev.clientY; app.setParam(id, fromNorm(d, n)); };
+    const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  });
+  el.addEventListener('dblclick', () => app.setParam(id, d.def));
+  el.addEventListener('wheel', (e) => { e.preventDefault(); app.setParam(id, fromNorm(d, norm() - Math.sign(e.deltaY) * 0.02)); }, { passive: false });
+  el.addEventListener('keydown', (e) => { const s = { ArrowUp: 0.02, ArrowDown: -0.02 }[e.key]; if (s) { e.preventDefault(); app.setParam(id, fromNorm(d, norm() + s)); } });
+  lfoDrop(app, el, id);
+  track(app, id, ctrl);
+  ctrl.update();
+  return el;
+}
+
+// Synth presets grouped by category.
+export function presetSelect(value, onchange, first) {
+  const s = h('select', { title: 'Sound + sequencer preset', onchange: () => onchange(s.value) },
+    first && h('option', { value: '' }, first),
+    PRESET_CATS.map((cat) => h('optgroup', { label: cat }, Object.keys(SYNTH_PRESETS).filter((k) => SYNTH_PRESETS[k].cat === cat).map((k) => h('option', { value: k, selected: k === value }, k)))));
+  return s;
 }
 
 // <select> bound to a choice parameter.

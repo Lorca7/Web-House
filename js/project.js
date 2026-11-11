@@ -37,6 +37,7 @@ export function applySynthPreset(P, tr, name) {
   const pr = SYNTH_PRESETS[name], p = 't' + tr.id;
   tr.preset = name;
   P.params[p + '.engine'] = pr.engine; P.params[p + '.role'] = pr.role;
+  for (const d of ENGINES[pr.engine]) P.params[`${p}.${pr.engine}.${d.key}`] = d.def;
   for (const k of ['oct', 'voicing', 'gate', 'density']) if (pr[k] !== undefined) P.params[`${p}.${k}`] = pr[k];
   for (const k in pr.set) P.params[`${p}.${k}`] = pr.set[k];
   regenerate(P, tr);

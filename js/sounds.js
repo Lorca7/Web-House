@@ -86,6 +86,13 @@ const KITS = {
     hat(r, { dec: 0.03, hp: 8500, mult: 1 }), hat(r, { dec: 0.3, hp: 8000, len: 0.8, mult: 1 }), shaker(r, { f: 7000 }), tone(r, { f0: 220, f1: 250, ad: 0.16 }), tone(r, { f0: 80, f1: 120, pd: 0.06, ad: 0.35, slap: 0.1, len: 0.8 })],
   'Dusty': (r) => [kick(r, { f0: 55, f1: 180, ad: 0.18, click: 0.8, drive: 2.5 }), clap(r, { tail: 0.08, f: 1500 }), rim(r, { f: 1400, d: 0.02 }), hat(r, { dec: 0.045, hp: 6000 }),
     hat(r, { dec: 0.18, hp: 5500, len: 0.6 }), shaker(r, { f: 4500 }), tone(r, { f0: 380, f1: 420, ad: 0.08, slap: 0.7 }), tone(r, { f0: 120, f1: 200, ad: 0.2, slap: 0.4 })].map(lofi),
+  '707 Crisp': (r) => [kick(r, { f0: 58, f1: 260, pd: 0.022, ad: 0.16, click: 0.9, drive: 1.2, len: 0.4 }), clap(r, { tail: 0.07, f: 1700 }), rim(r, { f: 2100, d: 0.01 }), hat(r, { dec: 0.025, hp: 9000, mult: 1.9 }),
+    hat(r, { dec: 0.16, hp: 8500, len: 0.5, mult: 1.9 }), shaker(r, { f: 8000 }), tone(r, { f0: 520, f1: 560, ad: 0.07, slap: 0.5 }), tone(r, { f0: 150, f1: 230, pd: 0.03, ad: 0.18, slap: 0.3 })],
+  'Tape Soft': (r) => [kick(r, { f0: 46, f1: 130, pd: 0.045, ad: 0.3, click: 0.05, drive: 1, len: 0.7 }), clap(r, { tail: 0.2, f: 900 }), rim(r, { f: 1200, d: 0.018 }), hat(r, { dec: 0.03, hp: 5000, mult: 1.2 }),
+    hat(r, { dec: 0.2, hp: 4500, len: 0.6, mult: 1.2 }), shaker(r, { f: 3800 }), tone(r, { f0: 250, f1: 270, ad: 0.2, slap: 0.1 }), tone(r, { f0: 100, f1: 130, pd: 0.06, ad: 0.3, slap: 0.05, len: 0.7 })]
+    .map((x) => normalize(bq(x, 'lp', 7000, 0.6), 0.9)),
+  'Electro Zap': (r) => [kick(r, { f0: 45, f1: 900, pd: 0.018, ad: 0.3, click: 0.2, drive: 2, len: 0.6 }), clap(r, { tail: 0.05, f: 2200 }), tone(r, { f0: 900, f1: 2600, pd: 0.03, ad: 0.05, slap: 0.2, len: 0.2 }), hat(r, { dec: 0.02, hp: 10000, mult: 2.4 }),
+    hat(r, { dec: 0.12, hp: 9500, len: 0.4, mult: 2.4 }), shaker(r, { f: 9000 }), tone(r, { f0: 300, f1: 1400, pd: 0.05, ad: 0.12, slap: 0 }), tone(r, { f0: 70, f1: 600, pd: 0.07, ad: 0.3, slap: 0, len: 0.6 })],
 };
 const kitCache = new Map();
 export function getKit(name) {
